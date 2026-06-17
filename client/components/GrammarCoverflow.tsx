@@ -1,33 +1,40 @@
 "use client";
 
+// Level selector — 3 large pastel cards side by side, each with its own colored
+// glow halo; hover scales up + intensifies the glow. Clicking a card opens it.
+
 import { useEffect, useState } from "react";
+import { ArrowRight } from "lucide-react";
 import { LEVELS } from "@/lib/grammar";
 import { getAllLessons } from "@/lib/grammarLibrary";
-import { ProgressBar } from "@/components/ui";
 
-// Abstract gradient "art" per level: a base diagonal gradient + two blurred
-// orbs, no emoji/icon (per design direction).
 const META: Record<
   string,
-  { name: string; grad: string; orb1: string; orb2: string }
+  { name: string; tag: string; desc: string; grad: string; glow: string; ink: string }
 > = {
   "A1-A2": {
     name: "Sơ cấp",
-    grad: "from-[#7c5cff] via-[#a78bfa] to-[#f0abfc]",
-    orb1: "radial-gradient(circle, #c084fc, transparent 70%)",
-    orb2: "radial-gradient(circle, #f0abfc, transparent 70%)",
+    tag: "A1 – A2",
+    desc: "Nền tảng: danh từ, đại từ, thì cơ bản, mạo từ, giới từ.",
+    grad: "linear-gradient(160deg, #efd7ff 0%, #f9c9e6 55%, #f6d3c4 100%)",
+    glow: "rgba(192, 132, 252, 0.55)",
+    ink: "#3b1d52",
   },
   "B1-B2": {
     name: "Trung cấp",
-    grad: "from-[#4f46e5] via-[#7c5cff] to-[#22d3ee]",
-    orb1: "radial-gradient(circle, #818cf8, transparent 70%)",
-    orb2: "radial-gradient(circle, #22d3ee, transparent 70%)",
+    tag: "B1 – B2",
+    desc: "Thì hoàn thành, câu bị động, mệnh đề, câu điều kiện.",
+    grad: "linear-gradient(160deg, #ffe6c2 0%, #ffd0a8 55%, #ffbfb0 100%)",
+    glow: "rgba(251, 146, 60, 0.5)",
+    ink: "#5a2e10",
   },
   "C1-C2": {
     name: "Cao cấp",
-    grad: "from-[#0ea5e9] via-[#6366f1] to-[#a855f7]",
-    orb1: "radial-gradient(circle, #38bdf8, transparent 70%)",
-    orb2: "radial-gradient(circle, #a855f7, transparent 70%)",
+    tag: "C1 – C2",
+    desc: "Đảo ngữ, cấu trúc nâng cao, sắc thái học thuật.",
+    grad: "linear-gradient(160deg, #bfe0ff 0%, #a8e6f0 55%, #c4d0ff 100%)",
+    glow: "rgba(56, 189, 248, 0.5)",
+    ink: "#10324a",
   },
 };
 
@@ -37,7 +44,6 @@ export default function GrammarCoverflow({
   onOpen: (level: string) => void;
 }) {
   const [counts, setCounts] = useState<Record<string, { total: number; learned: number }>>({});
-  const [center, setCenter] = useState(1); // default focus = Trung cấp
 
   useEffect(() => {
     const all = getAllLessons();
@@ -49,93 +55,67 @@ export default function GrammarCoverflow({
     setCounts(c);
   }, []);
 
-  const totalAll = Object.values(counts).reduce((a, b) => a + b.total, 0);
-  const learnedAll = Object.values(counts).reduce((a, b) => a + b.learned, 0);
-
   return (
     <div className="animate-fade-up">
-      <p className="text-center text-sm text-muted mb-4">Chọn cấp độ để bắt đầu</p>
+      <p className="text-center text-sm text-muted mb-6">Chọn cấp độ để bắt đầu</p>
 
-      <div className="flex items-center justify-center gap-0 py-2">
-        {LEVELS.map((lvl, i) => {
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+        {LEVELS.map((lvl) => {
           const m = META[lvl];
           const c = counts[lvl] ?? { total: 0, learned: 0 };
-          const isCenter = i === center;
-          const base =
-            "flex-none rounded-3xl overflow-hidden glass cursor-pointer transition-all duration-300 ease-out";
-          const size = isCenter
-            ? "w-52 z-10 scale-100 shadow-glow-accent"
-            : "w-36 scale-[0.86] opacity-55 hover:opacity-80";
-          const overlap = i < center ? "mr-[-22px]" : i > center ? "ml-[-22px]" : "";
+          const pct = c.total > 0 ? Math.round((c.learned / c.total) * 100) : 0;
           return (
-            <div
+            <button
               key={lvl}
-              className={`${base} ${size} ${overlap}`}
-              onClick={() => (isCenter ? onOpen(lvl) : setCenter(i))}
+              type="button"
+              onClick={() => onOpen(lvl)}
+              className="level-card group relative flex flex-col text-left rounded-[26px] p-5 min-h-[348px]"
+              style={{ background: m.grad, ["--glow" as string]: m.glow }}
             >
               <div
-                className={`relative overflow-hidden ${isCenter ? "h-44" : "h-32"}`}
+                className="text-xs font-bold tracking-widest uppercase"
+                style={{ color: m.ink, opacity: 0.65 }}
               >
-                <div className={`absolute inset-0 bg-gradient-to-br ${m.grad}`} />
-                <div
-                  className="absolute -top-8 -left-6 w-28 h-28 rounded-full blur-2xl"
-                  style={{ background: m.orb1 }}
-                />
-                <div
-                  className="absolute -bottom-10 -right-4 w-32 h-32 rounded-full blur-2xl opacity-80"
-                  style={{ background: m.orb2 }}
-                />
-                <div
-                  className="absolute inset-0"
-                  style={{
-                    background:
-                      "radial-gradient(130% 80% at 50% 125%, rgba(0,0,0,0.4), transparent 60%)",
-                  }}
-                />
+                {m.tag}
               </div>
-              <div className="p-3.5">
-                <div className={`font-extrabold text-white ${isCenter ? "text-xl" : "text-base"}`}>
-                  {m.name}
+              <h3
+                className="font-serif font-bold text-[2rem] leading-[1.1] mt-2"
+                style={{ color: m.ink }}
+              >
+                {m.name}
+              </h3>
+              <p
+                className="text-sm mt-3 leading-relaxed"
+                style={{ color: m.ink, opacity: 0.82 }}
+              >
+                {m.desc}
+              </p>
+
+              <div className="mt-auto pt-6" style={{ color: m.ink }}>
+                <div className="flex justify-between text-xs font-bold mb-1.5">
+                  <span>{c.learned}/{c.total} đã học</span>
+                  <span style={{ opacity: 0.7 }}>{c.total} bài</span>
                 </div>
-                <div className="text-xs text-muted mb-2">
-                  {lvl} · {c.total} bài
+                <div
+                  className="h-1.5 rounded-full overflow-hidden"
+                  style={{ background: "rgba(0,0,0,0.14)" }}
+                >
+                  <div
+                    className="h-full rounded-full transition-[width] duration-500"
+                    style={{ width: `${pct}%`, background: m.ink }}
+                  />
                 </div>
-                {isCenter && (
-                  <div className="flex items-center gap-2">
-                    <ProgressBar value={c.learned} max={c.total} className="flex-1" />
-                    <span className="text-xs text-ok font-bold">
-                      ✓ {c.learned}/{c.total}
-                    </span>
-                  </div>
-                )}
+                <span className="inline-flex items-center gap-1.5 mt-4 text-sm font-bold">
+                  Vào học
+                  <ArrowRight
+                    size={16}
+                    className="transition-transform duration-200 group-hover:translate-x-1"
+                  />
+                </span>
               </div>
-            </div>
+            </button>
           );
         })}
-      </div>
-
-      {/* dots */}
-      <div className="flex justify-center gap-2 mt-3">
-        {LEVELS.map((lvl, i) => (
-          <button
-            key={lvl}
-            aria-label={`Cấp ${lvl}`}
-            onClick={() => setCenter(i)}
-            className={`h-[7px] rounded-full transition-all ${
-              i === center ? "w-5 bg-accent" : "w-[7px] bg-white/25"
-            }`}
-          />
-        ))}
-      </div>
-
-      <div className="glass rounded-2xl p-3.5 mt-5">
-        <div className="flex justify-between text-xs mb-2">
-          <span className="text-slate-300">Tổng tiến độ</span>
-          <span className="text-accent-soft font-bold">
-            {learnedAll} / {totalAll} bài
-          </span>
-        </div>
-        <ProgressBar value={learnedAll} max={totalAll} />
       </div>
     </div>
   );
