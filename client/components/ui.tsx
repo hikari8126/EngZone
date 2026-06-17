@@ -149,3 +149,23 @@ export function Spinner({ className = "" }: { className?: string }) {
     />
   );
 }
+
+export function ProgressBar({
+  value,
+  max,
+  className = "",
+}: {
+  value: number;
+  max: number;
+  className?: string;
+}) {
+  const pct = max > 0 ? Math.round((value / max) * 100) : 0;
+  return (
+    <div className={`h-[7px] rounded-full bg-white/10 overflow-hidden ${className}`}>
+      <div
+        className="h-full rounded-full bg-gradient-to-r from-accent to-[#38bdf8] transition-[width] duration-500"
+        style={{ width: `${pct}%` }}
+      />
+    </div>
+  );
+}
