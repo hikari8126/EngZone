@@ -129,10 +129,6 @@ export function examCommand(size: 20 | 40): string {
   ].join("\n");
 }
 
-export function grammarCommand(question: string): string {
-  return `/grammar ${question}\n\n${GRAMMAR_FORMAT}\n${NO_SUGGEST}`;
-}
-
 // Bài học grammar tĩnh — bọc aiKeywords + level vào prompt cho grammar-explainer.
 export function grammarLessonCommand(l: {
   titleEn: string;
