@@ -178,7 +178,7 @@ export default function ChatBubble() {
         } ${hidden ? "translate-y-4" : ""}`}
       >
         <div
-          className="flex flex-col glass rounded-2xl shadow-card overflow-hidden"
+          className="flex flex-col reading-surface rounded-2xl shadow-card-deep overflow-hidden"
           style={{ height: panelH }}
         >
           <div className="flex items-center justify-between gap-2 px-3 py-2.5 border-b border-border bg-surface-2">
