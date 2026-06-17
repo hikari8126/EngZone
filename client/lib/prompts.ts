@@ -162,3 +162,13 @@ export function chatCommand(question: string): string {
 export function checkCommand(text: string): string {
   return `/check ${text}\n\n${NO_SUGGEST}`;
 }
+
+// Hỏi đáp ngữ pháp nhiều lượt: trả lời ngắn gọn đủ ý, không format icon dài.
+export function grammarChatTurn(question: string): string {
+  return [
+    `/grammar ${question}`,
+    ``,
+    `Trả lời NGẮN GỌN, đủ ý, bằng tiếng Việt; dùng ví dụ ngắn khi cần. Không dùng bộ icon trang trí dài.`,
+    NO_SUGGEST,
+  ].join("\n");
+}
