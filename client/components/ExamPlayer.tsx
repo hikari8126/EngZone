@@ -80,19 +80,23 @@ export default function ExamPlayer({
   return (
     <div className="mt-5 space-y-5">
       {timed && (
-        // Full-bleed top bar: flush to the top, spans the content width, rounded
-        // only at the bottom, strong glass — so scrolling content slides cleanly
-        // underneath instead of peeking through a gap.
-        <div
-          className={`sticky top-0 z-30 -mx-4 flex items-center justify-between rounded-b-2xl px-5 py-3.5 glass ${
-            lowTime ? "text-bad ring-1 ring-bad/50" : "text-slate-200"
-          }`}
-        >
-          <span className="flex items-center gap-2 text-sm font-medium">
-            <Clock size={16} /> Thời gian làm bài
-          </span>
-          <span className="text-2xl font-bold tabular-nums">{fmt(remaining)}</span>
-        </div>
+        // Full-bleed top bar spanning the whole content area (right of the sidebar
+        // → right edge), flush to the top, rounded only at the bottom, strong glass
+        // — content slides cleanly underneath. Fixed so it's always pinned during
+        // the timed test; the spacer below reserves its place in the flow.
+        <>
+          <div
+            className={`fixed top-0 left-0 right-0 md:left-64 lg:left-72 z-40 flex items-center justify-between rounded-b-2xl px-5 py-3.5 glass ${
+              lowTime ? "text-bad ring-1 ring-bad/50" : "text-slate-200"
+            }`}
+          >
+            <span className="flex items-center gap-2 text-sm font-medium">
+              <Clock size={16} /> Thời gian làm bài
+            </span>
+            <span className="text-2xl font-bold tabular-nums">{fmt(remaining)}</span>
+          </div>
+          <div aria-hidden className="h-14" />
+        </>
       )}
 
       {exam.title && !review && (
