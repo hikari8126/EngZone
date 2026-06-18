@@ -367,7 +367,56 @@ export const grammarLessons: GrammarLesson[] = [
     slug: "fronting-emphasis",
     aiKeywords: ["Fronting", "Emphatic do", "Inversion for emphasis", "Poetic word order"],
   },
+
+  // ===== BỔ SUNG: nhóm thực dụng =====
+  {
+    id: "g-b1-13",
+    level: "B1-B2",
+    category: "Phrasal Verbs & Collocations",
+    titleEn: "Phrasal Verbs",
+    titleVi: "Cụm động từ (Phrasal Verbs)",
+    description: "Động từ + giới từ/trạng từ tạo nghĩa mới; loại tách được và không tách được.",
+    slug: "phrasal-verbs",
+    aiKeywords: ["Separable phrasal verbs", "Inseparable phrasal verbs", "Transitive/intransitive phrasal verbs", "Common phrasal verbs"],
+  },
+  {
+    id: "g-b1-14",
+    level: "B1-B2",
+    category: "Phrasal Verbs & Collocations",
+    titleEn: "Collocations",
+    titleVi: "Kết hợp từ (Collocations)",
+    description: "Những từ thường đi cùng nhau tự nhiên: make/do, strong tea, heavy rain.",
+    slug: "collocations",
+    aiKeywords: ["Verb + noun collocations", "Adjective + noun collocations", "make vs do", "Common collocations"],
+  },
+  {
+    id: "g-b1-15",
+    level: "B1-B2",
+    category: "Sentence Structures",
+    titleEn: "Linking Words and Discourse Markers",
+    titleVi: "Từ nối và Dấu hiệu liên kết",
+    description: "however, therefore, although, in addition… nối ý mạch lạc khi viết.",
+    slug: "linking-words",
+    aiKeywords: ["Contrast linkers (however, although)", "Addition linkers (moreover)", "Cause/result (therefore)", "Discourse markers for writing"],
+  },
 ];
 
 export const grammarBySlug = (slug: string): GrammarLesson | undefined =>
   grammarLessons.find((l) => l.slug === slug);
+
+// Tên tiếng Việt cho các chủ đề (category) — dùng cho view "Theo chủ đề".
+export const CATEGORY_VI: Record<string, string> = {
+  "Nouns & Pronouns": "Danh từ & Đại từ",
+  "Articles & Determiners": "Mạo từ & Từ hạn định",
+  "Verbs & Tenses": "Động từ & Thì",
+  "Modifiers": "Tính từ & Trạng từ",
+  "Prepositions": "Giới từ",
+  "Sentence Structures": "Cấu trúc câu",
+  "Voice & Speech": "Bị động & Tường thuật",
+  "Clauses": "Mệnh đề",
+  "Conditionals": "Câu điều kiện",
+  "Modals": "Động từ khuyết thiếu",
+  "Verb Forms": "Dạng động từ (V-ing / to-V)",
+  "Advanced Structures": "Cấu trúc nâng cao",
+  "Phrasal Verbs & Collocations": "Cụm động từ & Kết hợp từ",
+};
