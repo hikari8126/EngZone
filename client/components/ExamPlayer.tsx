@@ -136,7 +136,7 @@ export default function ExamPlayer({
             >
               <div className="flex items-start gap-2 mb-3">
                 <span className="text-accent font-bold">{idx + 1}.</span>
-                <p className="font-medium text-slate-100">{q.q}</p>
+                <p className="font-medium text-slate-100 whitespace-pre-line">{q.q}</p>
                 {effectiveSubmitted &&
                   !review &&
                   (correct ? (

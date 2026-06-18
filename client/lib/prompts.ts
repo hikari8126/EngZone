@@ -137,22 +137,25 @@ const EXAM_DIFFICULTY: Record<ExamDifficulty, { label: string; hint: string }> =
 // hoá mỗi lần + chọn được độ khó (một loại đề duy nhất, không tách THPT vs tổng hợp).
 export function examCommand(size: 20 | 40, difficulty: ExamDifficulty = 2): string {
   const full = size === 40;
-  const c1 = full ? 12 : 6;
-  const c2 = full ? 5 : 4;
-  const c3 = full ? 5 : 4;
-  const rc = full ? [8, 10] : [3, 3];
-  const total = c1 + c2 + c3 + rc[0] + rc[1];
+  const cloze = full ? 8 : 4; // 1) hoàn thành thông báo/quảng cáo (có passage)
+  const grammar = full ? 10 : 5; // 2) ngữ pháp & từ vựng ĐỘC LẬP (không passage)
+  const arrange = full ? 4 : 2; // 3) sắp xếp câu — mỗi câu tự chứa mệnh đề
+  const missing = full ? 6 : 3; // 4) điền câu thiếu (có passage)
+  const reading = full ? 12 : 6; // 5) đọc hiểu (có passage)
+  const total = cloze + grammar + arrange + missing + reading;
   const diff = EXAM_DIFFICULTY[difficulty] ?? EXAM_DIFFICULTY[2];
   return [
-    `Tạo một đề thi thử môn Tiếng Anh theo ĐÚNG cấu trúc đề tốt nghiệp THPT Quốc gia Việt Nam 2025 (Chương trình GDPT 2018). Toàn bộ là câu hỏi trắc nghiệm 4 đáp án A/B/C/D.`,
+    `Tạo một đề thi thử môn Tiếng Anh dựa trên cấu trúc đề tốt nghiệp THPT 2025 (GDPT 2018). Toàn bộ là câu hỏi trắc nghiệm 4 đáp án A/B/C/D.`,
     `BẮT BUỘC: tổng số câu hỏi (đếm tất cả "questions" trong mọi "sections") phải CHÍNH XÁC bằng ${total} — không thiếu, không thừa.`,
-    `Gồm ${total} câu, chia thành các "sections" theo 4 dạng bài:`,
-    `1) Hoàn thành nội dung (quảng cáo/thông báo/tờ rơi hoặc đoạn văn có chỗ trống) — ${c1} câu.`,
-    `2) Sắp xếp thứ tự các câu thành đoạn văn/lá thư/hội thoại hoàn chỉnh — ${c2} câu. Đặt các mệnh đề a), b), c), d)… vào "passage" dưới dạng DANH SÁCH MARKDOWN, MỖI mệnh đề một dòng bắt đầu bằng "- " (ví dụ: "- a) ...\\n- b) ..."). "options" là các thứ tự ví dụ "b-a-d-c".`,
-    `3) Hoàn thành đoạn văn bằng các câu/đoạn còn thiếu — ${c3} câu (đoạn văn có chỗ trống đánh số trong "passage", option là các câu ứng viên).`,
-    `4) Đọc hiểu — 2 bài đọc (mỗi bài đặt văn bản vào "passage"): bài 1 có ${rc[0]} câu, bài 2 có ${rc[1]} câu.`,
+    `Gồm ${total} câu, chia thành ĐÚNG 5 "sections" theo thứ tự:`,
+    `1) Hoàn thành nội dung (quảng cáo/thông báo/tờ rơi hoặc đoạn văn có chỗ trống đánh số) — đặt văn bản vào "passage", ${cloze} câu, mỗi câu ứng một chỗ trống.`,
+    `2) ${grammar} câu NGỮ PHÁP & TỪ VỰNG ĐỘC LẬP — mỗi câu là MỘT câu/mệnh đề hoàn chỉnh có 1 chỗ trống, KHÔNG liên quan nhau, KHÔNG dùng "passage"; đa dạng điểm ngữ pháp (thì, mệnh đề, giới từ, liên từ, collocation, từ đồng/trái nghĩa…).`,
+    `3) Sắp xếp câu thành đoạn hội thoại/đoạn văn — ${arrange} câu, MỖI CÂU LÀ MỘT BÀI ĐỘC LẬP & TỰ CHỨA: đặt 4-5 mệnh đề a) b) c)… NGAY TRONG "q" (mỗi mệnh đề một dòng, ngăn bằng \\n), KHÔNG dùng "passage" chung; "options" là các thứ tự, ví dụ "b-a-c-e-d". TUYỆT ĐỐI không tách một bộ mệnh đề ra thành nhiều câu hỏi.`,
+    `4) Hoàn thành đoạn văn bằng các câu/đoạn còn thiếu — đặt đoạn (có chỗ trống đánh số) vào "passage", ${missing} câu.`,
+    `5) Đọc hiểu — 1-2 bài đọc (đặt văn bản vào "passage"), tổng ${reading} câu (ý chính, chi tiết, suy luận, từ vựng trong ngữ cảnh).`,
     `Độ khó: ${diff.label} — ${diff.hint}.`,
-    `RANDOM HOÁ mỗi đề: đa dạng chủ đề/ngữ cảnh các đoạn văn & câu hỏi (tránh trùng lặp giữa các lần) — xoay quanh những chủ đề như: ${sampleTopics(6)}; trộn thêm câu về từ vựng/collocation cho phong phú.`,
+    `RANDOM HOÁ mỗi đề: đa dạng chủ đề/ngữ cảnh (tránh trùng lặp giữa các lần) — xoay quanh những chủ đề như: ${sampleTopics(6)}.`,
+    `MỖI câu hỏi PHẢI có nghĩa và tự đứng được; không tạo câu rỗng/vô nghĩa để cho đủ số.`,
     `CHỈ trả về một JSON object hợp lệ theo schema sau — KHÔNG markdown, KHÔNG văn bản ngoài JSON:`,
     EXAM_SCHEMA,
     `Mỗi câu hỏi đúng 4 "options" (chỉ nội dung, không tiền tố "A."/"B."), "correct" là index 0-3, "explain" tiếng Việt ngắn gọn.`,
