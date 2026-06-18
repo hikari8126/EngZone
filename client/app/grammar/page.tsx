@@ -6,20 +6,10 @@ import { useFeatureState } from "@/lib/store";
 import { useModel } from "@/lib/modelConfig";
 import ModelSelector from "@/components/ModelSelector";
 import GrammarChat from "@/components/GrammarChat";
-import GrammarCoverflow from "@/components/GrammarCoverflow";
-import GrammarLevelView from "@/components/GrammarLevelView";
 import GrammarThemes from "@/components/GrammarThemes";
 
 export default function GrammarPage() {
   const [tab, setTab] = useFeatureState<"ask" | "library">("grammar:tab", "ask");
-  const [libMode, setLibMode] = useFeatureState<"level" | "theme">(
-    "grammar:libMode",
-    "level"
-  );
-  const [openLevel, setOpenLevel] = useFeatureState<string | null>(
-    "grammar:openLevel",
-    null
-  );
   const [model, setModel] = useModel("grammar");
 
   return (
@@ -42,31 +32,7 @@ export default function GrammarPage() {
         />
       </div>
 
-      {tab === "ask" ? (
-        <GrammarChat provider={model} />
-      ) : (
-        <>
-          <div className="mb-5 flex justify-center sm:justify-start">
-            <Segmented
-              value={libMode}
-              onChange={setLibMode}
-              options={[
-                { value: "level", label: "Theo cấp độ" },
-                { value: "theme", label: "Theo chủ đề" },
-              ]}
-            />
-          </div>
-          {libMode === "level" ? (
-            openLevel ? (
-              <GrammarLevelView level={openLevel} onBack={() => setOpenLevel(null)} />
-            ) : (
-              <GrammarCoverflow onOpen={(lvl) => setOpenLevel(lvl)} />
-            )
-          ) : (
-            <GrammarThemes />
-          )}
-        </>
-      )}
+      {tab === "ask" ? <GrammarChat provider={model} /> : <GrammarThemes />}
     </div>
   );
 }
