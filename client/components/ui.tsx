@@ -1,21 +1,34 @@
 "use client";
 
 import { ButtonHTMLAttributes, ReactNode } from "react";
+import { ArrowLeft } from "lucide-react";
 
 export function PageHeader({
   title,
   subtitle,
   icon,
   right,
+  onBack,
 }: {
   title: string;
   subtitle?: string;
   icon?: ReactNode;
   right?: ReactNode;
+  onBack?: () => void;
 }) {
   return (
     <header className="mb-5 flex items-start justify-between gap-3">
       <div className="flex items-center gap-3">
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            aria-label="Quay lại"
+            className="w-10 h-10 rounded-full glass-input text-slate-200 hover:text-white grid place-items-center shrink-0 transition"
+          >
+            <ArrowLeft size={18} />
+          </button>
+        )}
         {icon && (
           <div className="w-10 h-10 rounded-xl glass-input text-accent grid place-items-center shrink-0">
             {icon}

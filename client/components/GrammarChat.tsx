@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { Sparkles, Trash2 } from "lucide-react";
 import { TextArea, Button, Spinner, Card } from "@/components/ui";
 import { useFeatureState } from "@/lib/store";
@@ -20,6 +21,15 @@ const INIT: State = { q: "", messages: [], streaming: "", loading: false };
 
 export default function GrammarChat({ provider }: { provider?: string }) {
   const [s, set] = useFeatureState<State>(KEY, INIT);
+  // A lesson page can deep-link here with a pre-filled question. Consume it
+  // once into the input box (don't auto-send — let the user tweak/confirm).
+  const [askPrefill, setAskPrefill] = useFeatureState<string>("prefill:grammarAsk", "");
+  useEffect(() => {
+    if (!askPrefill) return;
+    set((p) => ({ ...p, q: askPrefill }));
+    setAskPrefill("");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [askPrefill]);
 
   const ask = () => {
     const q = s.q.trim();

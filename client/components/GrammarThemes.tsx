@@ -301,14 +301,17 @@ function ThemeDetail({ category, onBack }: { category: string; onBack: () => voi
 
   return (
     <div className="animate-fade-up">
-      <button
-        onClick={onBack}
-        className="inline-flex items-center gap-1 text-sm text-muted hover:text-white mb-3"
-      >
-        <ArrowLeft size={16} /> Tất cả chủ đề
-      </button>
-
-      <h2 className="text-lg font-bold text-white mb-3">{CATEGORY_VI[category] ?? category}</h2>
+      <div className="flex items-center gap-3 mb-4">
+        <button
+          type="button"
+          onClick={onBack}
+          aria-label="Tất cả chủ đề"
+          className="w-9 h-9 rounded-full glass-input text-slate-200 hover:text-white grid place-items-center shrink-0 transition"
+        >
+          <ArrowLeft size={17} />
+        </button>
+        <h2 className="text-lg font-bold text-white">{CATEGORY_VI[category] ?? category}</h2>
+      </div>
 
       <div className="glass rounded-2xl p-3.5 mb-4">
         <div className="flex justify-between text-xs mb-2">

@@ -6,8 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   RefreshCw,
-  ListChecks,
-  Layers,
+  MessageCircle,
   Database,
   Check,
   ChevronLeft,
@@ -52,9 +51,10 @@ export default function GrammarLessonView({ slug }: { slug: string }) {
   }>({ prev: null, next: null });
 
   const [model, setModel] = useModel("grammar");
-  // Prefill keys read by Quiz / Flashcard on mount.
-  const [, setQuizPrefill] = useFeatureState<string>("prefill:quizTopic", "");
-  const [, setFlashPrefill] = useFeatureState<string>("prefill:flashTopic", "");
+  // Deep-link to the Grammar "Hỏi AI" tab: drop a question into a prefill key
+  // (GrammarChat reads it on mount) and switch the tab, then navigate back.
+  const [, setAskPrefill] = useFeatureState<string>("prefill:grammarAsk", "");
+  const [, setGrammarTab] = useFeatureState<"ask" | "library">("grammar:tab", "ask");
 
   const runGen = (l: StoredLesson, force: boolean) => {
     if (loading) return;
@@ -116,27 +116,20 @@ export default function GrammarLessonView({ slug }: { slug: string }) {
     setLearned(slug, next);
   };
 
-  const goQuiz = () => {
-    setQuizPrefill(lesson.titleEn);
-    router.push("/quiz");
-  };
-  const goFlash = () => {
-    setFlashPrefill(lesson.titleEn);
-    router.push("/flashcard");
+  const askAI = () => {
+    setAskPrefill(
+      `Giải thích ngắn gọn, dễ hiểu về "${lesson.titleVi}" (${lesson.titleEn}) trong tiếng Anh, kèm ví dụ.`
+    );
+    setGrammarTab("ask");
+    router.push("/grammar");
   };
 
   return (
     <div className="animate-fade-up">
-      <Link
-        href="/grammar"
-        className="inline-flex items-center gap-1 text-sm text-muted hover:text-white mb-3"
-      >
-        <ArrowLeft size={16} /> Tất cả bài học
-      </Link>
-
       <PageHeader
         title={lesson.titleVi}
         subtitle={lesson.titleEn}
+        onBack={() => router.push("/grammar")}
         right={
           <div className="flex items-center gap-2 shrink-0">
             <ModelSelector value={model} onChange={setModel} />
@@ -156,11 +149,8 @@ export default function GrammarLessonView({ slug }: { slug: string }) {
         <Button variant="ghost" onClick={() => runGen(lesson, true)} disabled={loading}>
           <RefreshCw size={16} /> Tạo lại
         </Button>
-        <Button variant="ghost" onClick={goQuiz}>
-          <ListChecks size={16} /> Làm quiz chủ đề này
-        </Button>
-        <Button variant="ghost" onClick={goFlash}>
-          <Layers size={16} /> Flashcard
+        <Button variant="ghost" onClick={askAI}>
+          <MessageCircle size={16} /> Hỏi AI về bài này
         </Button>
       </div>
 
