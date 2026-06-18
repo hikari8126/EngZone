@@ -137,7 +137,7 @@ function ThemeCarousel({ onOpen }: { onOpen: (c: string) => void }) {
 
       <div
         ref={scroller}
-        className="flex gap-5 overflow-x-auto snap-x snap-mandatory px-[18%] sm:px-[32%] py-14 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex gap-5 overflow-x-auto snap-x snap-mandatory px-[19%] sm:px-[30%] py-14 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {themes.map((t, i) => {
           const p = PALETTES[i % PALETTES.length];
@@ -151,7 +151,7 @@ function ThemeCarousel({ onOpen }: { onOpen: (c: string) => void }) {
               }}
               type="button"
               onClick={() => (isActive ? onOpen(t.category) : centerCard(i))}
-              className={`flex-none w-[64%] sm:w-[36%] aspect-[2/3] snap-center flex flex-col text-left rounded-[28px] p-6 transition-all duration-300 ease-out ${
+              className={`flex-none w-[62%] sm:w-[40%] aspect-[2/3] snap-center flex flex-col text-left rounded-[28px] p-5 transition-all duration-300 ease-out ${
                 isActive
                   ? "scale-100 opacity-100"
                   : "scale-[0.85] opacity-55 brightness-[0.55] saturate-[0.8]"
@@ -170,7 +170,7 @@ function ThemeCarousel({ onOpen }: { onOpen: (c: string) => void }) {
                 Chủ đề · {t.total} bài
               </div>
               <h3
-                className="font-serif font-bold text-[1.9rem] leading-[1.08] mt-2"
+                className="font-serif font-bold text-2xl leading-[1.12] mt-2"
                 style={{ color: p.ink }}
               >
                 {CATEGORY_VI[t.category] ?? t.category}
