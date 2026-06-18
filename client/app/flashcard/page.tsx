@@ -69,7 +69,7 @@ export default function PracticePage() {
     <div className="animate-fade-up">
       <PageHeader
         title="Luyện từ"
-        subtitle="Ôn lại từ vựng đã tạo. Trả lời đúng 3 lần là “thuộc” và từ sẽ nghỉ."
+        subtitle="Ôn lại từ vựng đã tạo. Đúng 5 lần (đủ 3 dạng) là “thuộc” và từ sẽ nghỉ."
         icon={<Layers size={20} />}
       />
 
