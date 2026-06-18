@@ -20,7 +20,7 @@ const TABS: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/quiz", label: "Quiz", icon: ListChecks },
   { href: "/essay", label: "Essay", icon: FileText },
   { href: "/grammar", label: "Grammar", icon: BookOpen },
-  { href: "/flashcard", label: "Cards", icon: Layers },
+  { href: "/flashcard", label: "Luyện từ", icon: Layers },
   { href: "/check", label: "Check", icon: SpellCheck },
   { href: "/library", label: "Library", icon: Library },
 ];

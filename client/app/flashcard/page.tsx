@@ -1,149 +1,144 @@
 "use client";
 
-import { useEffect } from "react";
-import { Layers, RefreshCw } from "lucide-react";
-import { PageHeader, LevelSlider, Button } from "@/components/ui";
-import GenForm from "@/components/GenForm";
-import CardCarousel from "@/components/CardCarousel";
-import ModelSelector from "@/components/ModelSelector";
-import { useModel } from "@/lib/modelConfig";
-import { useFeatureState } from "@/lib/store";
-import { runCommand } from "@/lib/stream";
-import { flashCommand } from "@/lib/prompts";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { Layers, GraduationCap, Sparkles, RotateCcw } from "lucide-react";
+import { PageHeader, Segmented, Button } from "@/components/ui";
+import VocabPractice from "@/components/VocabPractice";
+import { getLibrary } from "@/lib/library";
 import { extractJson } from "@/lib/extractJson";
 import { recordActivity } from "@/lib/storage";
-import { listItems, addItem } from "@/lib/library";
-import { randomTopic } from "@/lib/topicPool";
+import {
+  addVocab,
+  studyBatch,
+  poolStats,
+  type PoolWord,
+} from "@/lib/vocabPool";
 import type { FlashSet } from "@/lib/types";
 
-interface State {
-  topic: string;
-  level: number;
-  custom: boolean;
-  loading: boolean;
-  error: string;
-  set: FlashSet | null;
-  source: "" | "new" | "library";
-  genTopic: string;
+type Phase = "setup" | "playing" | "done";
+
+// Bring vocab from previously-generated flashcard sets into the pool (idempotent:
+// addVocab skips words already there, keeping their mastery).
+function seedFromLibrary() {
+  for (const it of getLibrary()) {
+    if (it.feature !== "flash") continue;
+    const set = extractJson<FlashSet>(it.content);
+    if (set?.cards?.length) {
+      addVocab(
+        set.cards.map((c) => ({ word: c.word, meaning: c.meaning, ipa: c.ipa, example: c.example })),
+        it.topic
+      );
+    }
+  }
 }
 
-const KEY = "flash";
+export default function PracticePage() {
+  const [mounted, setMounted] = useState(false);
+  const [phase, setPhase] = useState<Phase>("setup");
+  const [size, setSize] = useState<10 | 15 | 20>(10);
+  const [batch, setBatch] = useState<PoolWord[]>([]);
+  const [lastCorrect, setLastCorrect] = useState(0);
+  const [stats, setStats] = useState({ total: 0, mastered: 0, learning: 0 });
 
-export default function FlashcardPage() {
-  const [s, set] = useFeatureState<State>(`${KEY}:state`, {
-    topic: "",
-    level: 3,
-    custom: false,
-    loading: false,
-    error: "",
-    set: null,
-    source: "",
-    genTopic: "",
-  });
-  const [flashPrefill, setFlashPrefill] = useFeatureState<string>("prefill:flashTopic", "");
-  const [model, setModel] = useModel("flashcard");
-
-  // Cross-link from a grammar lesson: prefill + switch to custom topic.
+  const refresh = () => setStats(poolStats());
   useEffect(() => {
-    if (!flashPrefill) return;
-    set((p) => ({ ...p, topic: flashPrefill, custom: true }));
-    setFlashPrefill("");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [flashPrefill]);
+    seedFromLibrary();
+    setMounted(true);
+    refresh();
+  }, []);
 
-  const generate = (forceNew = false, resolvedTopic?: string) => {
-    if (s.loading) return;
-    const topic = (
-      resolvedTopic ?? (s.custom && s.topic.trim() ? s.topic.trim() : randomTopic())
-    ).trim();
-
-    const prevSets = listItems("flash", topic, s.level);
-
-    if (!forceNew && prevSets.length) {
-      const parsed = extractJson<FlashSet>(prevSets[0].content);
-      if (parsed?.cards?.length) {
-        set((p) => ({ ...p, set: parsed, error: "", source: "library", genTopic: topic }));
-        return;
-      }
-    }
-
-    set((p) => ({ ...p, loading: true, error: "", set: null, source: "new", genTopic: topic }));
-    recordActivity({ feature: "flash", topic, level: s.level });
-
-    const prevWords = prevSets.flatMap(
-      (it) => extractJson<FlashSet>(it.content)?.cards?.map((c) => c.word) ?? []
-    );
-    const shown = s.set?.cards?.map((c) => c.word) ?? [];
-    const avoid = Array.from(new Set([...shown, ...prevWords]));
-
-    runCommand(KEY, flashCommand(topic, s.level, 10, avoid), {
-      onText: () => {},
-      onDone: (full) => {
-        const parsed = extractJson<FlashSet>(full);
-        if (!parsed?.cards?.length) {
-          set((p) => ({
-            ...p,
-            loading: false,
-            error: "Không phân tích được thẻ. Thử tạo lại nhé.",
-          }));
-          return;
-        }
-        set((p) => ({ ...p, loading: false, set: parsed, source: "new" }));
-        const n = listItems("flash", topic, s.level).length + 1;
-        addItem({
-          feature: "flash",
-          topic,
-          level: s.level,
-          title: `Flashcard · ${topic} · L${s.level} · bộ ${n}`,
-          content: JSON.stringify(parsed),
-        });
-      },
-      onError: (msg) => set((p) => ({ ...p, loading: false, error: msg })),
-    }, { provider: model, maxTokens: 4000 });
+  const start = () => {
+    const b = studyBatch(size);
+    if (!b.length) return;
+    setBatch(b);
+    setLastCorrect(0);
+    setPhase("playing");
+    recordActivity({ feature: "flash", topic: "luyện từ" });
   };
+
+  const finish = (correct: number) => {
+    setLastCorrect(correct);
+    refresh();
+    setPhase("done");
+  };
+
+  if (!mounted) return null;
 
   return (
     <div className="animate-fade-up">
       <PageHeader
-        title="Flashcard"
-        subtitle="10 thẻ từ vựng mỗi bộ; bấm “Tạo mới” để thêm bộ khác (không ghi đè)."
+        title="Luyện từ"
+        subtitle="Ôn lại từ vựng đã tạo. Trả lời đúng 3 lần là “thuộc” và từ sẽ nghỉ."
         icon={<Layers size={20} />}
-        right={<ModelSelector value={model} onChange={setModel} />}
       />
 
-      <GenForm
-        custom={s.custom}
-        onCustomChange={(custom) => set((p) => ({ ...p, custom }))}
-        topic={s.topic}
-        onTopicChange={(topic) => set((p) => ({ ...p, topic }))}
-        loading={s.loading}
-        onGenerate={(t) => generate(false, t)}
-        label="Tạo Flashcard"
-        placeholder="vd: emotions, work, travel…"
-      >
-        <LevelSlider value={s.level} onChange={(level) => set((p) => ({ ...p, level }))} />
-      </GenForm>
+      {stats.total === 0 ? (
+        <div className="reading-surface rounded-2xl p-8 text-center">
+          <GraduationCap size={30} className="mx-auto text-accent mb-3" />
+          <p className="text-slate-300 font-medium">Kho từ đang trống</p>
+          <p className="text-muted text-sm mt-1 mb-4">
+            Hãy tạo một bài ở “Vocab with Essay” — từ vựng của bài sẽ tự lưu vào đây để luyện.
+          </p>
+          <Link href="/essay">
+            <Button>
+              <Sparkles size={18} /> Tạo Vocab with Essay
+            </Button>
+          </Link>
+        </div>
+      ) : phase === "setup" ? (
+        <div className="glass rounded-2xl p-5">
+          <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm mb-5">
+            <span className="text-slate-300">
+              Tổng <span className="font-bold text-white">{stats.total}</span> từ
+            </span>
+            <span className="text-ok">Đã thuộc {stats.mastered}</span>
+            <span className="text-accent-soft">Đang học {stats.learning}</span>
+          </div>
 
-      {s.set && !s.loading && (
-        <div className="flex items-center justify-between gap-3 mt-3">
-          <span className="text-xs text-muted">
-            Chủ đề: <span className="text-slate-300 font-medium">{s.genTopic}</span>
-            {s.source === "library" && " · đã tải từ thư viện"}
-          </span>
-          <Button variant="ghost" onClick={() => generate(true)}>
-            <RefreshCw size={16} /> Tạo mới
-          </Button>
+          {stats.learning === 0 ? (
+            <p className="text-muted text-sm">
+              Bạn đã thuộc tất cả! Tạo thêm Vocab with Essay để có từ mới, hoặc đặt lại tiến độ bên dưới.
+            </p>
+          ) : (
+            <>
+              <div className="text-sm font-medium text-slate-300 mb-1.5">Số từ mỗi lượt</div>
+              <Segmented
+                value={size}
+                onChange={(v) => setSize(v)}
+                options={[
+                  { value: 10, label: "10" },
+                  { value: 15, label: "15" },
+                  { value: 20, label: "20" },
+                ]}
+              />
+              <div className="mt-5">
+                <Button onClick={start}>
+                  <GraduationCap size={18} /> Bắt đầu luyện
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
+      ) : phase === "playing" ? (
+        <VocabPractice words={batch} onDone={finish} />
+      ) : (
+        <div className="glass rounded-2xl p-6 text-center">
+          <div className="text-3xl font-extrabold text-white">
+            {lastCorrect}/{batch.length}
+          </div>
+          <p className="text-muted text-sm mt-1 mb-1">câu đúng lượt này</p>
+          <p className="text-sm text-ok mb-5">Đã thuộc {stats.mastered}/{stats.total} từ</p>
+          <div className="flex gap-2 justify-center">
+            <Button onClick={start} disabled={stats.learning === 0}>
+              <RotateCcw size={16} /> Luyện tiếp
+            </Button>
+            <Button variant="ghost" onClick={() => setPhase("setup")}>
+              Xong
+            </Button>
+          </div>
         </div>
       )}
-      {s.error && <p className="text-bad text-sm mt-3">{s.error}</p>}
-
-      {s.loading && (
-        <div className="mt-5 flex items-center gap-2 text-muted text-sm">
-          Đang tạo bộ thẻ về “{s.genTopic}”…
-        </div>
-      )}
-
-      {s.set && !s.loading && <CardCarousel cards={s.set.cards} />}
     </div>
   );
 }

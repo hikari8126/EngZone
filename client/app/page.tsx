@@ -31,7 +31,7 @@ const FEATURES: {
     grad: "linear-gradient(150deg,#efd7ff,#f9c9e6)", glow: "rgba(192,132,252,0.5)", ink: "#3b1d52",
   },
   {
-    href: "/essay", label: "Essay", icon: FileText, desc: "Essay mẫu + từ vựng", key: "essay",
+    href: "/essay", label: "Vocab + Essay", icon: FileText, desc: "Essay + thẻ từ vựng", key: "essay",
     grad: "linear-gradient(150deg,#ffe6c2,#ffbfb0)", glow: "rgba(251,146,60,0.45)", ink: "#5a2e10",
   },
   {
@@ -39,7 +39,7 @@ const FEATURES: {
     grad: "linear-gradient(150deg,#bfe0ff,#c4d0ff)", glow: "rgba(56,189,248,0.45)", ink: "#10324a",
   },
   {
-    href: "/flashcard", label: "Flashcard", icon: Layers, desc: "Học từ vựng theo thẻ", key: "flash",
+    href: "/flashcard", label: "Luyện từ", icon: Layers, desc: "Ôn từ vựng đã tạo", key: "flash",
     grad: "linear-gradient(150deg,#c8f5e0,#a7e8c4)", glow: "rgba(52,211,153,0.45)", ink: "#0f3d2e",
   },
   {
