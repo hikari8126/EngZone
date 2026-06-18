@@ -27,7 +27,7 @@ const FEATURES: {
   ink: string;
 }[] = [
   {
-    href: "/quiz", label: "Quiz", icon: ListChecks, desc: "Trắc nghiệm tương tác", key: "quiz",
+    href: "/quiz", label: "Luyện đề", icon: ListChecks, desc: "Đề thi thử đa dạng", key: "quiz",
     grad: "linear-gradient(150deg,#efd7ff,#f9c9e6)", glow: "rgba(192,132,252,0.5)", ink: "#3b1d52",
   },
   {

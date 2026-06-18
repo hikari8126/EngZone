@@ -17,7 +17,7 @@ import { useFeatureState } from "@/lib/store";
 
 const TABS: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/", label: "Home", icon: Home },
-  { href: "/quiz", label: "Quiz", icon: ListChecks },
+  { href: "/quiz", label: "Luyện đề", icon: ListChecks },
   { href: "/essay", label: "Essay", icon: FileText },
   { href: "/grammar", label: "Grammar", icon: BookOpen },
   { href: "/flashcard", label: "Luyện từ", icon: Layers },

@@ -2,39 +2,21 @@
 
 import { useEffect } from "react";
 import { ListChecks, RefreshCw, GraduationCap, Play, Lock } from "lucide-react";
-import { PageHeader, LevelSlider, Segmented, Button, Spinner, Card } from "@/components/ui";
-import GenForm from "@/components/GenForm";
-import QuizPlayer, { type QuizGameState } from "@/components/QuizPlayer";
+import { PageHeader, Segmented, Button, Spinner, Card } from "@/components/ui";
 import ExamPlayer, { type ExamState } from "@/components/ExamPlayer";
 import GenProgress from "@/components/GenProgress";
 import ModelSelector from "@/components/ModelSelector";
 import { useModel } from "@/lib/modelConfig";
 import { useFeatureState } from "@/lib/store";
 import { runCommand } from "@/lib/stream";
-import { quizCommand, examCommand, type QuizType } from "@/lib/prompts";
+import { examCommand, type ExamVariant } from "@/lib/prompts";
 import { extractJson } from "@/lib/extractJson";
 import { recordActivity } from "@/lib/storage";
 import { findItem, saveItem } from "@/lib/library";
-import { randomTopic } from "@/lib/topicPool";
-import type { Quiz, Exam } from "@/lib/types";
+import type { Exam } from "@/lib/types";
 
-type Mode = "practice" | "exam";
 type ExamSize = 20 | 40;
 
-interface Inputs {
-  topic: string;
-  level: number;
-  count: number;
-  type: QuizType;
-  custom: boolean;
-}
-interface RunState {
-  loading: boolean;
-  error: string;
-  quiz: Quiz | null;
-  source: "" | "new" | "library";
-  topic: string;
-}
 interface ExamRun {
   loading: boolean;
   error: string;
@@ -47,31 +29,15 @@ interface ExamRun {
 
 const KEY = "quiz";
 
+const VARIANT_LABEL: Record<ExamVariant, string> = {
+  thpt: "Đề thi THPT",
+  mixed: "Đề tổng hợp",
+};
+
 export default function QuizPage() {
-  const [mode, setMode] = useFeatureState<Mode>(`${KEY}:mode`, "practice");
   const [model, setModel] = useModel("quiz");
+  const [examType, setExamType] = useFeatureState<ExamVariant>(`${KEY}:examType`, "thpt");
 
-  // --- Practice mode state ---
-  const [inputs, setInputs] = useFeatureState<Inputs>(`${KEY}:inputs`, {
-    topic: "",
-    level: 2,
-    count: 5,
-    type: "mcq",
-    custom: false,
-  });
-  const [run, setRun] = useFeatureState<RunState>(`${KEY}:run`, {
-    loading: false,
-    error: "",
-    quiz: null,
-    source: "",
-    topic: "",
-  });
-  const [game, setGame] = useFeatureState<QuizGameState>(`${KEY}:game`, {
-    answers: {},
-    submitted: false,
-  });
-
-  // --- Exam mode state ---
   const [examRun, setExamRun] = useFeatureState<ExamRun>(`${KEY}:examRun`, {
     loading: false,
     error: "",
@@ -85,26 +51,15 @@ export default function QuizPage() {
     answers: {},
     submitted: false,
   });
-  // Test session (separate from ExamState so ExamPlayer's onChange can't clobber it).
   const [session, setSession] = useFeatureState<{ started: boolean; endsAt: number }>(
     `${KEY}:session`,
     { started: false, endsAt: 0 }
   );
   const [, setNavLocked] = useFeatureState<boolean>("nav:locked", false);
-  // Topic prefilled from a grammar lesson cross-link.
-  const [quizPrefill, setQuizPrefill] = useFeatureState<string>("prefill:quizTopic", "");
 
   const testInProgress = session.started && !examState.submitted;
 
-  useEffect(() => {
-    if (!quizPrefill) return;
-    setInputs((i) => ({ ...i, topic: quizPrefill, custom: true }));
-    setMode("practice");
-    setQuizPrefill("");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [quizPrefill]);
-
-  // Warn before unloading the page while a timed test is running.
+  // Warn before leaving while a timed test runs.
   useEffect(() => {
     if (!testInProgress) return;
     const handler = (e: BeforeUnloadEvent) => {
@@ -121,65 +76,21 @@ export default function QuizPage() {
     setSession({ started: true, endsAt: Date.now() + minutes * 60000 });
     setNavLocked(true);
   };
-
   const finishTest = () => setNavLocked(false);
-
-  const generate = (forceNew = false, resolvedTopic?: string) => {
-    if (run.loading) return;
-    const topic = (
-      resolvedTopic ??
-      (inputs.custom && inputs.topic.trim() ? inputs.topic.trim() : randomTopic())
-    ).trim();
-    setGame({ answers: {}, submitted: false });
-
-    const meta = { count: inputs.count, type: inputs.type };
-    if (!forceNew) {
-      const cached = findItem("quiz", topic, inputs.level, meta);
-      if (cached) {
-        const quiz = extractJson<Quiz>(cached.content);
-        if (quiz?.questions?.length) {
-          setRun({ loading: false, error: "", quiz, source: "library", topic });
-          return;
-        }
-      }
-    }
-
-    setRun({ loading: true, error: "", quiz: null, source: "new", topic });
-    recordActivity({ feature: "quiz", topic, level: inputs.level });
-
-    runCommand(KEY, quizCommand({ topic, level: inputs.level, ...meta, fresh: forceNew }), {
-      onText: () => {},
-      onDone: (full) => {
-        const quiz = extractJson<Quiz>(full);
-        if (!quiz?.questions?.length) {
-          setRun({ loading: false, error: "Không phân tích được quiz. Thử lại nhé.", quiz: null, source: "", topic });
-          return;
-        }
-        setRun({ loading: false, error: "", quiz, source: "new", topic });
-        saveItem({
-          feature: "quiz",
-          topic,
-          level: inputs.level,
-          meta,
-          title: `Quiz · ${topic} · L${inputs.level}`,
-          content: JSON.stringify(quiz),
-        });
-      },
-      onError: (msg) => setRun({ loading: false, error: msg, quiz: null, source: "", topic }),
-    }, { provider: model });
-  };
 
   const generateExam = (forceNew = false) => {
     if (examRun.loading) return;
     const size = examRun.size;
+    const variant = examType;
+    const cacheTopic = VARIANT_LABEL[variant];
     setExamState({ answers: {}, submitted: false });
     setSession({ started: false, endsAt: 0 });
     setNavLocked(false);
 
-    const meta = { kind: "exam", size };
+    const meta = { kind: "exam", size, variant };
     const base = { size, startedAt: 0, bytes: 0 };
     if (!forceNew) {
-      const cached = findItem("quiz", "Đề thi THPT", undefined, meta);
+      const cached = findItem("quiz", cacheTopic, undefined, meta);
       if (cached) {
         const exam = extractJson<Exam>(cached.content);
         if (exam?.sections?.length) {
@@ -189,23 +100,14 @@ export default function QuizPage() {
       }
     }
 
-    setExamRun({
-      ...base,
-      loading: true,
-      error: "",
-      exam: null,
-      source: "new",
-      startedAt: Date.now(),
-    });
-    recordActivity({ feature: "quiz", topic: "THPT exam" });
+    setExamRun({ ...base, loading: true, error: "", exam: null, source: "new", startedAt: Date.now() });
+    recordActivity({ feature: "quiz", topic: cacheTopic });
 
-    // Exams are long — give the model more token headroom + drive a progress bar.
     runCommand(
       KEY,
-      examCommand(size),
+      examCommand(size, variant),
       {
-        onText: (full) =>
-          setExamRun((p) => (p.loading ? { ...p, bytes: full.length } : p)),
+        onText: (full) => setExamRun((p) => (p.loading ? { ...p, bytes: full.length } : p)),
         onDone: (full) => {
           const exam = extractJson<Exam>(full);
           if (!exam?.sections?.length) {
@@ -215,9 +117,9 @@ export default function QuizPage() {
           setExamRun((p) => ({ ...p, loading: false, error: "", exam, source: "new" }));
           saveItem({
             feature: "quiz",
-            topic: "Đề thi THPT",
+            topic: cacheTopic,
             meta,
-            title: `Đề thi THPT · ${size} câu`,
+            title: `${cacheTopic} · ${size} câu`,
             content: JSON.stringify(exam),
           });
         },
@@ -230,189 +132,112 @@ export default function QuizPage() {
   return (
     <div className="animate-fade-up">
       <PageHeader
-        title="Quiz"
-        subtitle="Luyện tập theo chủ đề hoặc làm đề thi thử THPT."
+        title="Luyện đề"
+        subtitle="Đề thi thử: cấu trúc THPT 2025 hoặc đề tổng hợp ngẫu nhiên đa dạng."
         icon={<ListChecks size={20} />}
         right={!testInProgress && <ModelSelector value={model} onChange={setModel} />}
       />
 
       {!testInProgress && (
-        <div className="mb-4">
-          <Segmented
-            value={mode}
-            onChange={setMode}
-            options={[
-              { value: "practice", label: "Luyện tập" },
-              { value: "exam", label: "Đề thi THPT" },
-            ]}
-          />
+        <>
+          <Card>
+            <div className="mb-4">
+              <div className="text-sm font-medium text-slate-300 mb-1.5">Loại đề</div>
+              <Segmented
+                value={examType}
+                onChange={setExamType}
+                options={[
+                  { value: "thpt", label: "THPT 2025" },
+                  { value: "mixed", label: "Tổng hợp ngẫu nhiên" },
+                ]}
+              />
+            </div>
+
+            <p className="text-sm text-muted mb-4">
+              {examType === "thpt"
+                ? "Theo cấu trúc tốt nghiệp THPT 2025: 4 dạng (điền thông tin · sắp xếp câu · điền câu thiếu · đọc hiểu), chủ đề được đa dạng hoá mỗi lần."
+                : "Đề tổng hợp: trộn ngữ pháp + từ vựng + cloze + đọc hiểu trên các chủ đề ngẫu nhiên, không bám một kỳ thi cố định."}
+            </p>
+
+            <div className="mb-4">
+              <div className="text-sm font-medium text-slate-300 mb-1.5">Độ dài</div>
+              <Segmented
+                value={examRun.size}
+                onChange={(size) => setExamRun({ ...examRun, size })}
+                options={[
+                  { value: 20, label: "Rút gọn (~20 câu)" },
+                  { value: 40, label: "Đầy đủ (40 câu)" },
+                ]}
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <Button onClick={() => generateExam(false)} disabled={examRun.loading}>
+                {examRun.loading ? <Spinner /> : <GraduationCap size={18} />}
+                {examRun.loading ? "Đang ra đề…" : "Tạo đề"}
+              </Button>
+              {examRun.exam && !examRun.loading && (
+                <Button variant="ghost" onClick={() => generateExam(true)}>
+                  <RefreshCw size={16} /> Đề khác
+                </Button>
+              )}
+            </div>
+          </Card>
+
+          {examRun.source === "library" && examRun.exam && (
+            <p className="text-xs text-muted mt-3">Đã tải từ thư viện. Bấm “Đề khác” để ra đề mới.</p>
+          )}
+          {examRun.error && <p className="text-bad text-sm mt-3">{examRun.error}</p>}
+          {examRun.loading && (
+            <GenProgress
+              startedAt={examRun.startedAt}
+              bytes={examRun.bytes}
+              estMs={examRun.size === 40 ? 270000 : 120000}
+              estBytes={examRun.size === 40 ? 14000 : 6500}
+              label={`Đang biên soạn đề ${examRun.size} câu…`}
+            />
+          )}
+        </>
+      )}
+
+      {examRun.exam && !examRun.loading && !session.started && !examState.submitted && (
+        <Card className="mt-4 text-center">
+          <GraduationCap size={28} className="mx-auto text-accent mb-2" />
+          <div className="font-semibold text-white">Sẵn sàng làm bài</div>
+          <p className="text-sm text-muted mt-1 mb-4">
+            {examRun.exam.sections.reduce((n, s) => n + s.questions.length, 0)} câu ·{" "}
+            {examRun.size === 40 ? "50 phút" : "25 phút"} · bấm bắt đầu là tính giờ và khoá chuyển tab.
+          </p>
+          <Button onClick={startTest} className="mx-auto">
+            <Play size={18} /> Bắt đầu làm bài
+          </Button>
+        </Card>
+      )}
+
+      {testInProgress && (
+        <div className="flex items-center gap-2 text-xs text-muted mt-1 mb-1">
+          <Lock size={13} /> Đang làm bài — đã khoá chuyển tab cho tới khi nộp/hết giờ.
         </div>
       )}
 
-      {mode === "practice" ? (
-        <>
-          <GenForm
-            custom={inputs.custom}
-            onCustomChange={(custom) => setInputs({ ...inputs, custom })}
-            topic={inputs.topic}
-            onTopicChange={(topic) => setInputs({ ...inputs, topic })}
-            loading={run.loading}
-            onGenerate={(t) => generate(false, t)}
-            label="Tạo Quiz"
-            placeholder="vd: present perfect, articles, prepositions…"
-          >
-            <LevelSlider value={inputs.level} onChange={(level) => setInputs({ ...inputs, level })} />
-            <div className="flex flex-wrap gap-5">
-              <div>
-                <div className="text-sm font-medium text-slate-300 mb-1.5">Số câu</div>
-                <Segmented
-                  value={inputs.count}
-                  onChange={(count) => setInputs({ ...inputs, count })}
-                  options={[
-                    { value: 3, label: "3" },
-                    { value: 5, label: "5" },
-                    { value: 10, label: "10" },
-                  ]}
-                />
-              </div>
-              <div>
-                <div className="text-sm font-medium text-slate-300 mb-1.5">Dạng câu</div>
-                <Segmented
-                  value={inputs.type}
-                  onChange={(type) => setInputs({ ...inputs, type })}
-                  options={[
-                    { value: "mcq", label: "Trắc nghiệm" },
-                    { value: "fill", label: "Điền từ" },
-                    { value: "mixed", label: "Hỗn hợp" },
-                  ]}
-                />
-              </div>
-            </div>
-          </GenForm>
-
-          {run.quiz && !run.loading && (
-            <div className="flex items-center justify-between gap-3 mt-3">
-              <span className="text-xs text-muted">
-                Chủ đề: <span className="text-slate-300 font-medium">{run.topic}</span>
-                {run.source === "library" && " · đã tải từ thư viện"}
-              </span>
-              <Button variant="ghost" onClick={() => generate(true)}>
-                <RefreshCw size={16} /> Tạo mới
-              </Button>
-            </div>
-          )}
-          {run.error && <p className="text-bad text-sm mt-3">{run.error}</p>}
-          {run.loading && (
-            <div className="mt-5 flex items-center gap-2 text-muted text-sm">
-              <Spinner /> Đang tạo {inputs.count} câu hỏi về “{run.topic}”…
-            </div>
-          )}
-          {run.quiz && !run.loading && (
-            <QuizPlayer
-              questions={run.quiz.questions}
-              state={game}
-              onChange={setGame}
-              onRetry={() => setGame({ answers: {}, submitted: false })}
-            />
-          )}
-        </>
-      ) : (
-        <>
-          {/* Config + generate — hidden while a timed test is running */}
-          {!testInProgress && (
-            <>
-              <Card>
-                <p className="text-sm text-muted mb-4">
-                  Đề thi thử theo cấu trúc tốt nghiệp THPT 2025: trắc nghiệm A/B/C/D,
-                  đủ 4 dạng bài (điền thông tin · sắp xếp câu · điền câu thiếu · đọc
-                  hiểu). Thời gian: 25 phút (rút gọn) / 50 phút (đầy đủ).
-                </p>
-                <div className="mb-4">
-                  <div className="text-sm font-medium text-slate-300 mb-1.5">Độ dài</div>
-                  <Segmented
-                    value={examRun.size}
-                    onChange={(size) => setExamRun({ ...examRun, size })}
-                    options={[
-                      { value: 20, label: "Rút gọn (~20 câu)" },
-                      { value: 40, label: "Đầy đủ (40 câu)" },
-                    ]}
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <Button onClick={() => generateExam(false)} disabled={examRun.loading}>
-                    {examRun.loading ? <Spinner /> : <GraduationCap size={18} />}
-                    {examRun.loading ? "Đang ra đề…" : "Tạo đề thi"}
-                  </Button>
-                  {examRun.exam && !examRun.loading && (
-                    <Button variant="ghost" onClick={() => generateExam(true)}>
-                      <RefreshCw size={16} /> Đề khác
-                    </Button>
-                  )}
-                </div>
-              </Card>
-
-              {examRun.source === "library" && examRun.exam && (
-                <p className="text-xs text-muted mt-3">
-                  Đã tải từ thư viện. Bấm “Đề khác” để ra đề mới.
-                </p>
-              )}
-              {examRun.error && <p className="text-bad text-sm mt-3">{examRun.error}</p>}
-              {examRun.loading && (
-                <GenProgress
-                  startedAt={examRun.startedAt}
-                  bytes={examRun.bytes}
-                  estMs={examRun.size === 40 ? 270000 : 120000}
-                  estBytes={examRun.size === 40 ? 14000 : 6500}
-                  label={`Đang biên soạn đề ${examRun.size} câu…`}
-                />
-              )}
-            </>
-          )}
-
-          {/* Start gate: exam ready, not yet started */}
-          {examRun.exam && !examRun.loading && !session.started && !examState.submitted && (
-            <Card className="mt-4 text-center">
-              <GraduationCap size={28} className="mx-auto text-accent mb-2" />
-              <div className="font-semibold text-white">Sẵn sàng làm bài</div>
-              <p className="text-sm text-muted mt-1 mb-4">
-                {examRun.exam.sections.reduce((n, s) => n + s.questions.length, 0)} câu ·{" "}
-                {examRun.size === 40 ? "50 phút" : "25 phút"} · bấm bắt đầu là tính giờ và
-                khoá chuyển tab.
-              </p>
-              <Button onClick={startTest} className="mx-auto">
-                <Play size={18} /> Bắt đầu làm bài
-              </Button>
-            </Card>
-          )}
-
-          {/* In-progress notice */}
-          {testInProgress && (
-            <div className="flex items-center gap-2 text-xs text-muted mt-1 mb-1">
-              <Lock size={13} /> Đang làm bài — đã khoá chuyển tab cho tới khi nộp/hết giờ.
-            </div>
-          )}
-
-          {/* The exam itself: only after starting (or to show results after submit) */}
-          {examRun.exam && !examRun.loading && (session.started || examState.submitted) && (
-            <ExamPlayer
-              exam={examRun.exam}
-              state={examState}
-              endsAt={session.started && !examState.submitted ? session.endsAt : undefined}
-              onChange={(next) => {
-                setExamState(next);
-                if (next.submitted) finishTest();
-              }}
-              onTimeUp={() => {
-                setExamState({ ...examState, submitted: true });
-                finishTest();
-              }}
-              onRetry={() => {
-                setExamState({ answers: {}, submitted: false });
-                setSession({ started: false, endsAt: 0 });
-              }}
-            />
-          )}
-        </>
+      {examRun.exam && !examRun.loading && (session.started || examState.submitted) && (
+        <ExamPlayer
+          exam={examRun.exam}
+          state={examState}
+          endsAt={session.started && !examState.submitted ? session.endsAt : undefined}
+          onChange={(next) => {
+            setExamState(next);
+            if (next.submitted) finishTest();
+          }}
+          onTimeUp={() => {
+            setExamState({ ...examState, submitted: true });
+            finishTest();
+          }}
+          onRetry={() => {
+            setExamState({ answers: {}, submitted: false });
+            setSession({ started: false, endsAt: 0 });
+          }}
+        />
       )}
     </div>
   );
