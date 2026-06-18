@@ -184,7 +184,7 @@ function ThemeCarousel({ onOpen }: { onOpen: (c: string) => void }) {
 
       <div
         ref={scroller}
-        className="flex items-start gap-4 overflow-x-auto snap-x snap-mandatory px-[19%] sm:px-[30%] py-12 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex items-start gap-4 overflow-x-auto snap-x snap-mandatory px-[19%] sm:px-[30%] py-20 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {loop.map((t, i) => {
           const real = i % N;
