@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Check, X, Clock } from "lucide-react";
 import Markdown from "./Markdown";
 import { Button } from "./ui";
@@ -67,6 +67,24 @@ export default function ExamPlayer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timed, remaining <= 0]);
 
+  // Morph-on-scroll: a zero-height sentinel sits just above the sticky bar.
+  // While it's visible (top of the test) the bar shows as a floating rounded
+  // card; once it scrolls out, the bar is pinned → expand to a full-bleed
+  // flush-top bar with a bottom radius. CSS transitions animate between them.
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const [stuck, setStuck] = useState(false);
+  useEffect(() => {
+    if (!timed) return;
+    const el = sentinelRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(
+      ([entry]) => setStuck(!entry.isIntersecting),
+      { threshold: 0 }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [timed]);
+
   const score = flat.reduce(
     (n, q, i) => n + (answers[i] === q.correct ? 1 : 0),
     0
@@ -80,22 +98,25 @@ export default function ExamPlayer({
   return (
     <div className="mt-5 space-y-5">
       {timed && (
-        // Full-bleed top bar spanning the whole content area (right of the sidebar
-        // → right edge), flush to the top, rounded only at the bottom, strong glass
-        // — content slides cleanly underneath. Fixed so it's always pinned during
-        // the timed test; the spacer below reserves its place in the flow.
+        // Sticky timer that morphs on scroll. Card mode (sentinel visible):
+        // rounded all-round, sits within the content padding, small top gap.
+        // Stuck mode (pinned): bleeds out to the content edges (-mx-4), flush
+        // to the top, rounded only at the bottom. Liquid-glass surface either
+        // way; `transition-all` animates the shape change between the two.
         <>
+          <div ref={sentinelRef} aria-hidden className="h-0" />
           <div
-            className={`fixed top-0 left-0 right-0 md:left-64 lg:left-72 z-40 flex items-center justify-between rounded-b-2xl px-5 py-3.5 glass ${
-              lowTime ? "text-bad ring-1 ring-bad/50" : "text-slate-200"
-            }`}
+            className={`sticky top-0 z-30 flex items-center justify-between liquid-glass transition-all duration-300 ease-out ${
+              stuck
+                ? "-mx-4 rounded-b-2xl rounded-t-none px-5 py-3.5"
+                : "mx-0 mt-1 rounded-2xl px-5 py-3"
+            } ${lowTime ? "text-bad ring-1 ring-bad/50" : "text-slate-200"}`}
           >
             <span className="flex items-center gap-2 text-sm font-medium">
               <Clock size={16} /> Thời gian làm bài
             </span>
             <span className="text-2xl font-bold tabular-nums">{fmt(remaining)}</span>
           </div>
-          <div aria-hidden className="h-14" />
         </>
       )}
 

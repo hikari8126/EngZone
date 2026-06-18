@@ -38,6 +38,82 @@ body {
   box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
 }
 
+/* ===== Liquid glass (iOS-26-style) — used by the exam timer bar =====
+   Heavier blur + saturation than .glass, a frosted tint, a specular edge
+   highlight (bright top-left → fading), and a moving sheen sweep on the
+   ::after layer. The element using this must be position:relative + overflow
+   clipping so the sheen stays inside the rounded shape. */
+.liquid-glass {
+  /* NB: no `position` here — it must not override the `sticky` utility on the
+     timer bar (this rule loads after Tailwind utilities and would win). The
+     element using .liquid-glass is itself positioned (sticky/relative), so the
+     ::before/::after layers are still contained. */
+  isolation: isolate;
+  overflow: hidden;
+  background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.16),
+      rgba(255, 255, 255, 0.04) 42%,
+      rgba(124, 92, 255, 0.08)
+    ),
+    rgba(22, 26, 38, 0.45);
+  -webkit-backdrop-filter: blur(22px) saturate(200%) brightness(1.08);
+  backdrop-filter: blur(22px) saturate(200%) brightness(1.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.45),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+    inset 0 -10px 24px -16px rgba(124, 92, 255, 0.5),
+    0 18px 46px -20px rgba(0, 0, 0, 0.75);
+}
+/* specular glint pinned to the top-left corner */
+.liquid-glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  background: radial-gradient(
+    120% 140% at 0% 0%,
+    rgba(255, 255, 255, 0.28),
+    transparent 46%
+  );
+}
+/* slow sheen sweep across the bar */
+.liquid-glass::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 45%;
+  left: -60%;
+  pointer-events: none;
+  z-index: -1;
+  background: linear-gradient(
+    100deg,
+    transparent,
+    rgba(255, 255, 255, 0.22),
+    transparent
+  );
+  transform: skewX(-18deg);
+  animation: lg-sheen 7s ease-in-out infinite;
+}
+@keyframes lg-sheen {
+  0%,
+  62% {
+    left: -60%;
+  }
+  88%,
+  100% {
+    left: 130%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .liquid-glass::after {
+    animation: none;
+    display: none;
+  }
+}
+
 body {
   @apply bg-bg text-slate-100 font-sans antialiased;
   background-image:
