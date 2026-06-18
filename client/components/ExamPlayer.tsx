@@ -184,7 +184,7 @@ export default function ExamPlayer({
         });
 
         const passageEl = section.passage ? (
-          <div className="bg-surface-2 border border-border rounded-xl p-4 text-sm text-slate-200 prose-claude lg:sticky lg:top-16 lg:self-start lg:max-h-[72vh] lg:overflow-auto">
+          <div className="bg-surface-2 border border-border rounded-xl p-4 text-sm text-slate-200 prose-claude lg:sticky lg:top-16 lg:max-h-[80vh] lg:overflow-auto">
             <Markdown>{normalizePassage(section.passage)}</Markdown>
           </div>
         ) : null;
@@ -197,8 +197,9 @@ export default function ExamPlayer({
             <p className="text-slate-300 text-sm">{section.instruction}</p>
 
             {passageEl ? (
-              // Reading/cloze: passage on the left (stays visible), questions on the right.
-              <div className="flex flex-col lg:flex-row gap-4 lg:items-start">
+              // Reading/cloze: passage left (sticky — follows while you scroll its
+              // questions, releases at the next cluster); questions on the right.
+              <div className="flex flex-col lg:flex-row gap-4 lg:items-stretch">
                 <div className="lg:w-1/2">{passageEl}</div>
                 <div className="lg:w-1/2 space-y-3">{questionEls}</div>
               </div>
