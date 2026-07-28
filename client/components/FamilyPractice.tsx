@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Check, X, ArrowRight, SkipForward } from "lucide-react";
+import { Check, X, ArrowRight, BadgeCheck, SkipForward } from "lucide-react";
 import { Button, TextInput } from "@/components/ui";
 import { recordFamilyResult, FAMILY_MASTER_AT, type FamilyEntry } from "@/lib/wordFamily";
 import { initSkip, skipCurrent, type SkipState } from "@/lib/skipQueue";
@@ -149,7 +149,9 @@ export default function FamilyPractice({
             </div>
             <div className="text-xs text-muted mt-1">
               Họ từ đúng {Math.min(fam.correct + (result ? 1 : 0), FAMILY_MASTER_AT)}/{FAMILY_MASTER_AT}
-              {result && fam.correct + 1 >= FAMILY_MASTER_AT ? " · đã thuộc 🎉" : ""}
+              {result && fam.correct + 1 >= FAMILY_MASTER_AT && (
+                <span className="inline-flex items-center gap-1"> · <BadgeCheck size={13} /> Đã thuộc</span>
+              )}
             </div>
             <Button onClick={next} className="mt-3">
               {isLast ? "Xem kết quả" : "Câu tiếp"} <ArrowRight size={16} />

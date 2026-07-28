@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { Check, X, ArrowRight, SkipForward } from "lucide-react";
+import { Check, X, ArrowRight, BadgeCheck, Repeat2, SkipForward } from "lucide-react";
 import { Button, TextInput } from "@/components/ui";
 import { useFeatureState } from "@/lib/store";
 import { distractors, recordResult, nextIntervalDays, MASTER_AT, ALL_MODES, type PoolWord } from "@/lib/vocabPool";
@@ -289,11 +289,11 @@ export default function VocabPractice({
                 <>
                   <div className="text-xs text-muted mt-1">
                     Đúng {c}/{MASTER_AT} · dạng {nModes}/{ALL_MODES.length}
-                    {done ? " · đã thuộc 🎉" : ""}
+                    {done && <span className="inline-flex items-center gap-1"> · <BadgeCheck size={13} /> Đã thuộc</span>}
                   </div>
                   {!done && (
-                    <div className="text-xs text-accent-soft mt-0.5">
-                      🔁 {result ? `Ôn lại sau ${iv} ngày` : "Ôn lại ngay lượt sau"}
+                    <div className="text-xs text-accent-soft mt-0.5 inline-flex items-center gap-1">
+                      <Repeat2 size={13} /> {result ? `Ôn lại sau ${iv} ngày` : "Ôn lại ngay lượt sau"}
                     </div>
                   )}
                 </>

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { AudioLines, Play, X } from "lucide-react";
+import { AudioLines, Lightbulb, Play, X } from "lucide-react";
 import {
   getEnglishVoices,
   onVoicesChanged,
@@ -119,9 +119,10 @@ export default function VoicePicker() {
               })}
             </div>
 
-            <p className="text-[11px] text-muted mt-2.5 leading-snug">
-              💡 macOS: tải giọng <b>Premium</b> ở System Settings → Accessibility → Spoken
-              Content → Manage Voices để nghe hay hơn hẳn.
+            <p className="text-[11px] text-muted mt-2.5 leading-snug flex gap-1.5">
+              <Lightbulb size={13} className="shrink-0 mt-0.5" />
+              <span>macOS: tải giọng <b>Premium</b> ở System Settings → Accessibility → Spoken
+              Content → Manage Voices để nghe hay hơn hẳn.</span>
             </p>
           </div>,
           document.body

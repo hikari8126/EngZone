@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Layers, GraduationCap, Sparkles, RotateCcw, Network, ClipboardCheck, Headphones } from "lucide-react";
+import { Layers, GraduationCap, Sparkles, RotateCcw, Network, ClipboardCheck, Headphones, Repeat2, CheckCircle2 } from "lucide-react";
 import { PageHeader, Segmented, Button } from "@/components/ui";
 import VocabPractice from "@/components/VocabPractice";
 import CardCarousel from "@/components/CardCarousel";
@@ -14,6 +14,7 @@ import { getLibrary } from "@/lib/library";
 import { extractJson } from "@/lib/extractJson";
 import { recordActivity } from "@/lib/storage";
 import { addVocab, studyBatch, poolStats, dueCount, type PoolWord } from "@/lib/vocabPool";
+import { shuffle } from "@/lib/shuffle";
 import { getFamilies, studyFamilies, familyStats, type FamilyEntry } from "@/lib/wordFamily";
 import type { FlashSet } from "@/lib/types";
 
@@ -194,9 +195,9 @@ export default function PracticePage() {
                 <>
                   <div className="mb-3 text-sm">
                     {due > 0 ? (
-                      <span className="text-accent-soft font-semibold">🔁 {due} từ đến hạn ôn hôm nay</span>
+                      <span className="text-accent-soft font-semibold inline-flex items-center gap-1"><Repeat2 size={14} /> {due} từ đến hạn ôn hôm nay</span>
                     ) : (
-                      <span className="text-muted">Chưa có từ đến hạn — ôn sớm cũng được 👍</span>
+                      <span className="text-muted">Chưa có từ đến hạn — bạn vẫn có thể ôn sớm.</span>
                     )}
                   </div>
                   <div className="text-sm font-medium text-muted mb-1.5">Số từ mỗi lượt</div>
@@ -220,7 +221,10 @@ export default function PracticePage() {
         ) : phase === "study" ? (
           <StudyCards
             words={batch}
-            onStart={() => setPhase("playing")}
+            onStart={() => {
+              setBatch((current) => shuffle(current));
+              setPhase("playing");
+            }}
             onBack={() => setPhase("setup")}
           />
         ) : phase === "playing" ? (
@@ -281,7 +285,7 @@ export default function PracticePage() {
               <div key={f.root} className="glass rounded-2xl p-4">
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-sm font-semibold text-fg">{f.root}</span>
-                  {f.mastered && <span className="text-xs text-ok">đã thuộc ✓</span>}
+                  {f.mastered && <span className="text-xs text-ok inline-flex items-center gap-1"><CheckCircle2 size={13} /> Đã thuộc</span>}
                 </div>
                 <FamilyMindmap family={f} />
               </div>
