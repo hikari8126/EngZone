@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { Loader2, Plus, Check, Volume2, X } from "lucide-react";
+import { Loader2, Plus, Check, Volume2, X, Trash2 } from "lucide-react";
 import { runCommand } from "@/lib/stream";
 import { wordLookupCommand } from "@/lib/prompts";
 import { extractJson } from "@/lib/extractJson";
-import { addVocab } from "@/lib/vocabPool";
+import { addVocab, removeWord } from "@/lib/vocabPool";
 import { addFamilies } from "@/lib/wordFamily";
 import { getProvider } from "@/lib/modelConfig";
 import { speak } from "@/lib/tts";
@@ -42,6 +42,14 @@ export default function EssayView({
   // can follow that word on scroll).
   const [open, setOpen] = useState<{ word: string; anchor: HTMLElement } | null>(null);
   const close = useCallback(() => setOpen(null), []);
+  // Words the user marked as "already known" → hidden from the list + dropped from
+  // the practice pool (keyed by lowercased word).
+  const [removed, setRemoved] = useState<Record<string, boolean>>({});
+
+  const removeFromList = (word: string) => {
+    removeWord(word); // drop from the "Luyện từ" practice pool too
+    setRemoved((r) => ({ ...r, [word.trim().toLowerCase()]: true }));
+  };
 
   const lookup = useCallback(
     (word: string, sentence: string) => {
@@ -90,9 +98,14 @@ export default function EssayView({
     setAdded((a) => ({ ...a, [surfaceWord.toLowerCase()]: true }));
   };
 
+  // Visible vocab = everything except words the user marked as already known.
+  const visibleVocab = (data.vocab ?? []).filter(
+    (v) => !removed[v.word.trim().toLowerCase()]
+  );
+
   // Vocab (từ mới) to highlight in the prose — matched by base form + inflections.
   const vocabWords = new Set(
-    (data.vocab ?? []).map((v) => v.word.trim().toLowerCase()).filter(Boolean)
+    visibleVocab.map((v) => v.word.trim().toLowerCase()).filter(Boolean)
   );
 
   return (
@@ -109,26 +122,37 @@ export default function EssayView({
         />
       </div>
 
-      {data.vocab?.length > 0 && (
+      {visibleVocab.length > 0 && (
         <div className="reading-surface rounded-2xl p-5">
           <h2 className="text-lg font-bold text-fg mb-3">
             Từ vựng{" "}
             <span className="text-muted text-sm font-normal">
-              ({data.vocab.length} từ)
+              ({visibleVocab.length} từ)
             </span>
           </h2>
           <ul className="divide-y divide-border">
-            {data.vocab.map((v, i) => (
-              <li key={i} className="py-2.5">
-                <div className="flex flex-wrap items-baseline gap-x-2">
-                  <span className="font-semibold text-fg">{v.word}</span>
-                  {v.pos && <span className="text-xs text-muted">({v.pos})</span>}
-                  {v.ipa && <span className="text-xs text-accent-soft">{v.ipa}</span>}
-                  <span className="text-muted text-[15px]">· {v.meaning}</span>
+            {visibleVocab.map((v, i) => (
+              <li key={i} className="py-2.5 flex items-start gap-2">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-baseline gap-x-2">
+                    <span className="font-semibold text-fg">{v.word}</span>
+                    {v.pos && <span className="text-xs text-muted">({v.pos})</span>}
+                    {v.ipa && <span className="text-xs text-accent-soft">{v.ipa}</span>}
+                    <span className="text-muted text-[15px]">· {v.meaning}</span>
+                  </div>
+                  {v.example && (
+                    <p className="text-sm text-muted italic mt-0.5">{v.example}</p>
+                  )}
                 </div>
-                {v.example && (
-                  <p className="text-sm text-muted italic mt-0.5">{v.example}</p>
-                )}
+                <button
+                  type="button"
+                  aria-label={`Bỏ từ "${v.word}" (đã biết)`}
+                  title="Đã biết — bỏ khỏi danh sách & kho luyện từ"
+                  onClick={() => removeFromList(v.word)}
+                  className="shrink-0 mt-0.5 text-muted hover:text-bad transition-colors"
+                >
+                  <Trash2 size={16} />
+                </button>
               </li>
             ))}
           </ul>
